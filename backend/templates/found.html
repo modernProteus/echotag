@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EchoTag – Report Found Tool</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <header>
+      <h1>📍 EchoTag</h1>
+      <p id="toolIdText" class="subtitle">
+        Tool ID:
+        <strong><span id="toolId">...</span></strong>
+      </p>
+    </header>
+
+    <main>
+      <div class="card">
+        <h2>
+          Tool:
+          <span id="toolName">Loading...</span>
+        </h2>
+        <img
+          id="toolImage"
+          class="tool-image"
+          src=""
+          alt="Tool preview"
+          style="
+            max-width: 100%;
+            border-radius: 8px;
+            display: none;
+            margin-bottom: 1rem;
+          "
+        />
+
+        <p>Please leave a message so the owner can reconnect with you.</p>
+
+        <form id="reportForm">
+          <!-- Message -->
+          <label for="message">Your Message</label>
+          <textarea
+            id="message"
+            name="message"
+            required
+            placeholder="Where did you find it? Any other details..."
+          ></textarea>
+
+          <!-- Optional Location -->
+          <label>
+            <input type="checkbox" id="shareLocation" name="shareLocation" />
+            Share my current location
+          </label>
+
+          <!-- Optional Image -->
+          <label for="image">Upload a photo (optional)</label>
+          <input type="file" id="image" name="image" accept="image/*" />
+
+          <!-- Auth or Anonymous Toggle -->
+          <label>How would you like to connect?</label>
+          <div class="option-group">
+            <label>
+              <input type="radio" name="authMode" value="anon" checked />
+              Stay Anonymous
+            </label>
+            <label>
+              <input type="radio" name="authMode" value="auth" />
+              Sign In / Create ID
+            </label>
+          </div>
+
+          <!-- Auth Field -->
+          <div id="authSection" class="hidden">
+            <label for="finderId">Your Name or Handle</label>
+            <input
+              type="text"
+              id="finderId"
+              name="finderId"
+              placeholder="e.g., woodsy123"
+            />
+          </div>
+
+          <!-- Submit -->
+          <button type="submit">Send Message</button>
+        </form>
+      </div>
+
+      <!-- Confirmation -->
+      <div id="confirmation" class="card hidden">
+        <h3>✅ Message Sent</h3>
+        <p>
+          Thanks for helping out! If you'd like to check for a reply later, save
+          this link:
+        </p>
+        <div class="response-box">
+          <code id="reconnectLink">
+            https://j-scan.me/respond?thread=jc045-abc123
+          </code>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <p class="footnote">
+        Powered by EchoTag •
+        <a href="/">Back to Home</a>
+      </p>
+    </footer>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("reportForm");
+        const params = new URLSearchParams(window.location.search);
+        const toolId = params.get("id");
+
+        if (!toolId) {
+          console.error("No tool ID found in URL.");
+          return;
+        }
+
+        // Load device info
+        fetch(`/api/device?id=${toolId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data || data.error) {
+              document.getElementById("toolName").textContent = "Unknown Tool";
+              return;
+            }
+
+            document.getElementById("toolName").textContent =
+              data.name || "Unknown Tool";
+
+            if (data.image_url) {
+              const img = document.getElementById("toolImage");
+              img.src = data.image_url;
+              img.alt = `Image of ${data.name}`;
+              img.style.display = "block";
+            }
+          });
+
+        // Form submit handler
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData(form);
+          formData.append("tool_id", toolId);
+
+          // Get geolocation if possible
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              async (position) => {
+                const location = `${position.coords.latitude},${position.coords.longitude}`;
+                formData.append("location", location);
+                await submitReport(formData);
+              },
+              async (error) => {
+                console.warn("Geolocation failed:", error.message);
+                await submitReport(formData); // Continue without location
+              },
+              { enableHighAccuracy: true, timeout: 5000 },
+            );
+          } else {
+            await submitReport(formData);
+          }
+        });
+
+        async function submitReport(formData) {
+          try {
+            const res = await fetch("/api/report", {
+              method: "POST",
+              body: formData,
+            });
+
+            const result = await res.json();
+            if (result.status === "ok") {
+              window.location.href = `/respond?thread=${result.thread_id}`;
+            } else {
+              console.error("Server error:", result);
+              alert("Something went wrong. Please try again.");
+            }
+          } catch (err) {
+            console.error("Submission failed:", err);
+            alert("Submission failed. Please try again.");
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

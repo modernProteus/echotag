@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Message from Owner</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <style>
+      .hidden {
+        display: none;
+      }
+      main {
+        padding: 2rem;
+        text-align: center;
+      }
+      .tool-id {
+        font-weight: bold;
+        color: #2b6cb0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>
+        Response for Tool
+        <span id="toolId">...</span>
+      </h1>
+
+      <div id="responseArea" class="hidden">
+        <p id="ownerMessage" style="font-size: 1.2rem"></p>
+      </div>
+
+      <div id="noResponse" class="hidden">
+        <p>
+          There’s no message yet. Please check back later or enable
+          notifications to get an alert when the owner responds.
+        </p>
+      </div>
+
+      <footer style="margin-top: 2rem">
+        <p style="font-size: 0.8rem; color: #888">EchoTag • A J-Scan project</p>
+      </footer>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const threadId = params.get("thread");
+
+      if (!threadId) {
+        document.getElementById("toolId").textContent = "Unknown";
+        document.getElementById("noResponse").classList.remove("hidden");
+      } else {
+        fetch(`/api/response?thread=${threadId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            document.getElementById("toolId").textContent =
+              data.toolId || threadId;
+            if (data.message) {
+              document.getElementById("ownerMessage").textContent =
+                data.message;
+              document
+                .getElementById("responseArea")
+                .classList.remove("hidden");
+            } else {
+              document.getElementById("noResponse").classList.remove("hidden");
+            }
+          })
+          .catch((err) => {
+            console.error("Fetch failed:", err);
+            document.getElementById("toolId").textContent =
+              threadId || "Unknown";
+            document.getElementById("noResponse").classList.remove("hidden");
+          });
+      }
+    </script>
+  </body>
+</html>

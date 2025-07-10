@@ -1,0 +1,27 @@
+<!-- save as templates/echotag_email.html -->
+<html>
+  <body style="font-family: sans-serif; color: #333;">
+	<h2>🔔 EchoTag Report: {{ tool_id }}</h2>
+
+	<p><strong>Finder:</strong> {{ finder_id }} ({{ auth_status }})</p>
+	{% if location %}
+	  <p><strong>Location:</strong> {{ location }}</p>
+	{% endif %}
+
+	<p><strong>Message:</strong><br>{{ message }}</p>
+
+	{% if image_url %}
+	  <p><strong>Image:</strong><br>
+	  <a href="{{ image_url }}" target="_blank">View uploaded image</a></p>
+	{% endif %}
+
+	<hr>
+	<p>
+	  <strong>Discord Thread:</strong><br>
+	  <a href="https://discord.com/channels/{{ discord_channel_id }}/{{ thread_id }}" target="_blank">
+		Open Thread in Discord
+	  </a>
+	</p>
+	<p style="font-size: 0.8em; color: #888;">Sent automatically by EchoTag Bot</p>
+  </body>
+</html>
