@@ -2,21 +2,23 @@ from flask import Flask
 from flask_cors import CORS
 from routes import routes_blueprint
 from db.models import db
-from config import Config  # ✅ Import the Config class
+from config import Config
 import os
 
 def create_app():
-	app = Flask(__name__)
-	app.config.from_object(Config)  # ✅ Load config from the class
-	CORS(app)  # Enable cross-origin requests
+    app = Flask(__name__)
+    app.config.from_object(Config)  # Load config class
+    CORS(app)  # Enable CORS
 
-	# Ensure folders exist
-	os.makedirs("static/uploads", exist_ok=True)
+    # Ensure folders exist
+    os.makedirs("static/uploads", exist_ok=True)
 
-	db.init_app(app)
-	app.register_blueprint(routes_blueprint)
-	return app
+    db.init_app(app)
+    app.register_blueprint(routes_blueprint)
 
+    return app
+
+# Only run this for local development
 if __name__ == "__main__":
-	app = create_app()
-	app.run(debug=True)
+    app = create_app()
+    app.run(debug=True)
