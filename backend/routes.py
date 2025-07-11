@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template
-from backend.db.models import Device
-from backend.config import Config
+from db.models import Device
+from config import Config
 
 DISCORD_CHANNEL_ID = Config.DISCORD_CHANNEL_ID
 DISCORD_BOT_TOKEN = Config.DISCORD_BOT_TOKEN
