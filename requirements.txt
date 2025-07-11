@@ -1,0 +1,7 @@
+Flask
+python-dotenv
+Flask-Cors
+requests
+Flask-SQLAlchemy
+email-validator
+sqlalchemy
