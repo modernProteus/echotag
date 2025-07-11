@@ -1,8 +1,8 @@
 from flask import Flask
 from flask_cors import CORS
-from backend.routes import routes_blueprint
-from backend.db.models import db
-from backend.config import Config  # ✅ Import the Config class
+from routes import routes_blueprint
+from db.models import db
+from config import Config  # ✅ Import the Config class
 import os
 
 def create_app():
