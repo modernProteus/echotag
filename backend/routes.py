@@ -19,6 +19,12 @@ routes_blueprint = Blueprint("routes", __name__)
 DISCORD_API_URL = "https://discord.com/api/v10"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse"
 
+routes_blueprint = Blueprint('routes', __name__)
+
+@routes_blueprint.route("/")
+def index():
+	return jsonify({"message": "EchoTag backend is live!"})
+
 def reverse_geocode(location):
 	try:
 		lat, lon = map(str.strip, location.split(","))
