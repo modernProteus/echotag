@@ -181,9 +181,11 @@ def found_page():
 	return render_template("found.html")
 
 
-from flask import render_template, request
+from flask import Blueprint, render_template, request
 
-@app.route("/respond")
+main = Blueprint("main", __name__)
+
+@main.route("/respond")
 def respond():
     thread_id = request.args.get("thread")
     if not thread_id:
