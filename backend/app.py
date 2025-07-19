@@ -24,3 +24,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI'
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+from backend.routes import main as main_routes
+
+app.register_blueprint(main_routes)
