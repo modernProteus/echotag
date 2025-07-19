@@ -179,3 +179,14 @@ def get_device():
 @routes_blueprint.route("/found")
 def found_page():
 	return render_template("found.html")
+
+
+from flask import render_template, request
+
+@app.route("/respond")
+def respond():
+    thread_id = request.args.get("thread")
+    if not thread_id:
+        return "Missing thread ID", 400
+
+    return render_template("response.html", thread=thread_id)
