@@ -4,7 +4,7 @@ from backend.db.models import db, Device, FindEvent
 from backend.app import app
 
 # -- Local SQLite DB path
-SQLITE_PATH = "backend/db/instance/echotag.db"
+SQLITE_PATH = "backend/instance/echotag.db"
 SQLITE_URI = f"sqlite:///{SQLITE_PATH}"
 
 # -- PostgreSQL target is already configured in your app
