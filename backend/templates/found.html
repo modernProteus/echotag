@@ -132,6 +132,7 @@
 
             document.getElementById("toolName").textContent =
               data.name || "Unknown Tool";
+            document.getElementById("toolId").textContent = toolId;
 
             if (data.image_url) {
               const img = document.getElementById("toolImage");
