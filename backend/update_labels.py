@@ -1,6 +1,7 @@
 from backend.db.models import db, Device
 from backend.app import app
 
+# ID-to-name updates
 updates = {
     "JC105": "Manfrotto - Mini Friction Arm",
     "JC106": "Manfrotto - MEGA Clamp",
@@ -11,12 +12,18 @@ updates = {
 }
 
 with app.app_context():
-    for tool_id, new_label in updates.items():
-        device = Device.query.get(tool_id)
+    updated = 0
+
+    for tool_id, new_name in updates.items():
+        device = db.session.get(Device, tool_id)
+
         if device:
-            device.label = new_label
-            print(f"✅ Updated {tool_id} to '{new_label}'")
+            print(f"🔎 {tool_id} — BEFORE: {device.name}")
+            device.name = new_name
+            print(f"✅ {tool_id} — UPDATED TO: {device.name}")
+            updated += 1
         else:
-            print(f"❌ Tool {tool_id} not found")
+            print(f"❌ {tool_id} — Not found")
+
     db.session.commit()
-    print("🔁 Done updating labels.")
+    print(f"\n🔁 Done. {updated} device(s) updated.\n")
