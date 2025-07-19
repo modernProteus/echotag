@@ -82,7 +82,7 @@ def report_tool():
 		# Lookup device
 		device = Device.query.filter_by(id=tool_id).first()
 		device_name = device.name if device else "Unknown"
-		device_image_url = f"https://cdn.j-scan.me/images/{tool_id}.jpg"  # Can switch to local logic if needed
+		device_image_url = f"https://j-scan.me/static/images/{tool_id}.jpg"  # Can switch to local logic if needed
 
 		# Localize time to CST
 		cst_time = datetime.utcnow().strftime("%I:%M %p CST")
