@@ -56,6 +56,8 @@
         fetch(`/api/response?thread=${threadId}`)
           .then((res) => res.json())
           .then((data) => {
+            console.log("🧪 Response data:", data);
+
             document.getElementById("toolId").textContent =
               data.toolId || threadId;
             if (data.message) {
