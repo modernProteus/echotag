@@ -1,20 +1,26 @@
 from flask import Flask
-import os
+from flask_cors import CORS
+from backend.routes import routes_blueprint
 from backend.db.models import db
-from backend.routes import main as main_routes
-from backend.routes import api as api_routes
+from backend.config import Config
+import os
 
-app = Flask(__name__)
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+    CORS(app)
 
-# Database configuration
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # Ensure folders exist
+    os.makedirs("static/uploads", exist_ok=True)
+
+    db.init_app(app)
+    app.register_blueprint(routes_blueprint)
+    return app
+
+# 🔥 This must exist for Gunicorn to see it
+app = create_app()
+
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///instance/echotag.db')
-
-db.init_app(app)
-
-# Register routes
-app.register_blueprint(main_routes)
-app.register_blueprint(api_routes)
 
 if __name__ == "__main__":
     app.run(debug=True)
