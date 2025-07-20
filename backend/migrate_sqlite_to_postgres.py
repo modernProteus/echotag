@@ -54,7 +54,7 @@ try:
 
     for row in results:
         event = FindEvent(
-            tool_id=row.tool_id,
+            tool_id=row.id,
             timestamp=row.timestamp,
             message=row.message,
             finder_id=row.finder_id,
