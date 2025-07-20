@@ -1,4 +1,5 @@
 from flask import Flask
+import os
 from backend.db.models import db
 from backend.routes import main as main_routes
 from backend.routes import api as api_routes
