@@ -1,67 +1,84 @@
+# backend/migrate_sqlite_to_postgres.py
+
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
+from sqlalchemy.orm import sessionmaker, declarative_base
 from backend.db.models import db, Device, FindEvent
-from sqlalchemy.orm.session import close_all_sessions
 
-# Load database URLs
-sqlite_url = os.environ.get('SQLITE_DATABASE_URI', 'sqlite:///instance/echotag.db')
-postgres_url = os.environ.get('SQLALCHEMY_DATABASE_URI')
+Base = declarative_base()
 
-if not postgres_url:
-    raise EnvironmentError("Environment variable SQLALCHEMY_DATABASE_URI is not set.")
+# ✅ Inline definition of the old SQLite schema
+class LegacyDevice(Base):
+    __tablename__ = 'devices'
+    id = Column(Integer, primary_key=True)
+    tool_id = Column(String, unique=True, nullable=False)
+    name = Column(String)
 
-print(f"📦 Migrating data from:\nSQLite → {sqlite_url}\nPostgreSQL → {postgres_url}")
+class LegacyFindEvent(Base):
+    __tablename__ = 'find_events'
+    id = Column(Integer, primary_key=True)
+    tool_id = Column(String)
+    timestamp = Column(DateTime)
+    message = Column(String)
+    finder_id = Column(String)
+    location = Column(String)
+    image_url = Column(String)
+    image_filename = Column(String)
+    thread_id = Column(String)
+    reconnect_id = Column(String)
+    notified = Column(Boolean, default=False)
 
-# Create SQLAlchemy engines
-sqlite_engine = create_engine(sqlite_url)
-postgres_engine = create_engine(postgres_url)
+# ✅ URIs from environment
+sqlite_uri = os.getenv('SQLITE_DATABASE_URI')
+postgres_uri = os.getenv('SQLALCHEMY_DATABASE_URI')
 
-# Create tables in Postgres using model metadata
-print("🛠️ Creating tables in PostgreSQL...")
-db.metadata.create_all(bind=postgres_engine)
+print("📦 Migrating data from:")
+print(f"SQLite → {sqlite_uri}")
+print(f"PostgreSQL → {postgres_uri}")
 
-# Setup sessions
-SqliteSession = sessionmaker(bind=sqlite_engine)
+# ✅ Create engines/sessions
+sqlite_engine = create_engine(sqlite_uri)
+postgres_engine = create_engine(postgres_uri)
+
+SQLiteSession = sessionmaker(bind=sqlite_engine)
 PostgresSession = sessionmaker(bind=postgres_engine)
-sqlite_session = SqliteSession()
+
+sqlite_session = SQLiteSession()
 postgres_session = PostgresSession()
 
-try:
-    # --- Migrate Devices ---
-    print("🔄 Migrating Devices...")
-    devices = sqlite_session.query(Device).all()
-    for device in devices:
-        postgres_session.merge(Device(
-            tool_id=device.tool_id,
-            name=device.name
-        ))
+# ✅ Create tables in Postgres
+print("🛠️ Creating tables in PostgreSQL...")
+db.metadata.create_all(postgres_engine)
 
-    # --- Migrate FindEvents ---
-    print("🔄 Migrating FindEvents...")
-    find_events = sqlite_session.query(FindEvent).all()
-    for event in find_events:
-        postgres_session.merge(FindEvent(
-            tool_id=event.tool_id,
-            timestamp=event.timestamp,
-            message=event.message,
-            finder_id=event.finder_id,
-            location=event.location,
-            image_url=event.image_url,
-            image_filename=event.image_filename,
-            thread_id=event.thread_id,
-            reconnect_id=event.reconnect_id,
-            notified=event.notified
-        ))
+try:
+    print("🔄 Migrating Devices...")
+    for d in sqlite_session.query(LegacyDevice).all():
+        new_device = Device(tool_id=d.tool_id, name=d.name)
+        postgres_session.add(new_device)
+
+    print("🔄 Migrating Find Events...")
+    for e in sqlite_session.query(LegacyFindEvent).all():
+        new_event = FindEvent(
+            tool_id=e.tool_id,
+            timestamp=e.timestamp,
+            message=e.message,
+            finder_id=e.finder_id,
+            location=e.location,
+            image_url=e.image_url,
+            image_filename=e.image_filename,
+            thread_id=e.thread_id,
+            reconnect_id=e.reconnect_id,
+            notified=e.notified,
+        )
+        postgres_session.add(new_event)
 
     postgres_session.commit()
     print("✅ Migration complete.")
 
 except Exception as e:
     postgres_session.rollback()
-    print("❌ Error during migration:", e)
+    print(f"❌ Error during migration: {e}")
 
 finally:
     sqlite_session.close()
     postgres_session.close()
-    close_all_sessions()
