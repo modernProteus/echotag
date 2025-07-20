@@ -1,10 +1,9 @@
 # backend/db/init_postgres.py
 
-from backend.db.models import db
 from backend.app import app
-
-print(f"📡 Using DB: {app.config['SQLALCHEMY_DATABASE_URI']}")
+from backend.db.models import db
 
 with app.app_context():
+    print(f"📡 Using DB: {app.config['SQLALCHEMY_DATABASE_URI']}")
     db.create_all()
     print("✅ Tables created in PostgreSQL.")
