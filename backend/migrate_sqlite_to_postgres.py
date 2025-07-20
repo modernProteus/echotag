@@ -1,63 +1,67 @@
 import os
-from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from backend.db.models import db, Device, FindEvent
-from backend.app import app
+from sqlalchemy.orm.session import close_all_sessions
 
-# -- Local SQLite DB path
-SQLITE_PATH = "backend/instance/echotag.db"
-SQLITE_URI = f"sqlite:///{SQLITE_PATH}"
+# Load database URLs
+sqlite_url = os.environ.get('SQLITE_DATABASE_URI', 'sqlite:///instance/echotag.db')
+postgres_url = os.environ.get('SQLALCHEMY_DATABASE_URI')
 
-# -- PostgreSQL target is already configured in your app
-POSTGRES_URI = app.config["SQLALCHEMY_DATABASE_URI"]
+if not postgres_url:
+    raise EnvironmentError("Environment variable SQLALCHEMY_DATABASE_URI is not set.")
 
-def migrate_data():
-    print(f"🔁 Connecting to SQLite: {SQLITE_PATH}")
-    sqlite_engine = create_engine(SQLITE_URI)
-    sqlite_conn = sqlite_engine.connect()
-    sqlite_metadata = MetaData()
-    sqlite_metadata.reflect(bind=sqlite_engine)
+print(f"📦 Migrating data from:\nSQLite → {sqlite_url}\nPostgreSQL → {postgres_url}")
 
-    # Reflect tables
-    sqlite_devices = Table("devices", sqlite_metadata, autoload_with=sqlite_engine)
-    sqlite_finds = Table("find_events", sqlite_metadata, autoload_with=sqlite_engine)
+# Create SQLAlchemy engines
+sqlite_engine = create_engine(sqlite_url)
+postgres_engine = create_engine(postgres_url)
 
-    # Fetch all rows
-    device_rows = sqlite_conn.execute(sqlite_devices.select()).fetchall()
-    find_rows = sqlite_conn.execute(sqlite_finds.select()).fetchall()
+# Create tables in Postgres using model metadata
+print("🛠️ Creating tables in PostgreSQL...")
+db.metadata.create_all(bind=postgres_engine)
 
-    with app.app_context():
-        for row in device_rows:
-            if not db.session.get(Device, row.id):
-                device = Device(
-                    id=row.id,
-                    name=row.name,
-                    image_url=row.image_url,
-                    image_filename=row.image_filename,
-                    notes=row.notes,
-                    active=row.active,
-                    created_at=row.created_at,
-                )
-                db.session.add(device)
+# Setup sessions
+SqliteSession = sessionmaker(bind=sqlite_engine)
+PostgresSession = sessionmaker(bind=postgres_engine)
+sqlite_session = SqliteSession()
+postgres_session = PostgresSession()
 
-        for row in find_rows:
-            if not db.session.get(FindEvent, row.id):
-                event = FindEvent(
-                    id=row.id,
-                    tool_id=row.tool_id,
-                    timestamp=row.timestamp,
-                    message=row.message,
-                    finder_id=row.finder_id,
-                    location=row.location,
-                    image_url=row.image_url,
-                    image_filename=row.image_filename,
-                    thread_id=row.thread_id,
-                    reconnect_id=row.reconnect_id,
-                    notified=row.notified,
-                )
-                db.session.add(event)
+try:
+    # --- Migrate Devices ---
+    print("🔄 Migrating Devices...")
+    devices = sqlite_session.query(Device).all()
+    for device in devices:
+        postgres_session.merge(Device(
+            tool_id=device.tool_id,
+            name=device.name
+        ))
 
-        db.session.commit()
-        print(f"✅ Migrated {len(device_rows)} devices and {len(find_rows)} find events.")
+    # --- Migrate FindEvents ---
+    print("🔄 Migrating FindEvents...")
+    find_events = sqlite_session.query(FindEvent).all()
+    for event in find_events:
+        postgres_session.merge(FindEvent(
+            tool_id=event.tool_id,
+            timestamp=event.timestamp,
+            message=event.message,
+            finder_id=event.finder_id,
+            location=event.location,
+            image_url=event.image_url,
+            image_filename=event.image_filename,
+            thread_id=event.thread_id,
+            reconnect_id=event.reconnect_id,
+            notified=event.notified
+        ))
 
-if __name__ == "__main__":
-    migrate_data()
+    postgres_session.commit()
+    print("✅ Migration complete.")
+
+except Exception as e:
+    postgres_session.rollback()
+    print("❌ Error during migration:", e)
+
+finally:
+    sqlite_session.close()
+    postgres_session.close()
+    close_all_sessions()
