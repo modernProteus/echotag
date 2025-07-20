@@ -7,10 +7,7 @@ app = Flask(__name__)
 
 # Database configuration
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SQLALCHEMY_DATABASE_URI"] = app.config.get(
-    "SQLALCHEMY_DATABASE_URI", 
-    "sqlite:///backend/instance/echotag.db"
-)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///instance/echotag.db')
 
 db.init_app(app)
 
