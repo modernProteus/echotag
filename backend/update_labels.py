@@ -1,5 +1,7 @@
-from backend.db.models import db, Device
-from backend.app import app
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from backend.db.models import Device
 
 # ID-to-name updates
 updates = {
@@ -11,19 +13,30 @@ updates = {
     "JC110": "Manfrotto - Micro Clamp",
 }
 
-with app.app_context():
-    updated = 0
+# Load PostgreSQL URI
+DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
+if not DATABASE_URI:
+    raise EnvironmentError("SQLALCHEMY_DATABASE_URI environment variable not set.")
 
-    for tool_id, new_name in updates.items():
-        device = db.session.get(Device, tool_id)
+# Connect to PostgreSQL
+engine = create_engine(DATABASE_URI)
+Session = sessionmaker(bind=engine)
+session = Session()
 
-        if device:
-            print(f"🔎 {tool_id} — BEFORE: {device.name}")
-            device.name = new_name
-            print(f"✅ {tool_id} — UPDATED TO: {device.name}")
-            updated += 1
-        else:
-            print(f"❌ {tool_id} — Not found")
+print("🔄 Applying label updates to PostgreSQL...\n")
 
-    db.session.commit()
-    print(f"\n🔁 Done. {updated} device(s) updated.\n")
+updated = 0
+for device_id, new_name in updates.items():
+    device = session.query(Device).filter_by(id=device_id).first()
+    if device:
+        old_name = device.name or "(none)"
+        device.name = new_name
+        updated += 1
+        print(f"✅ {device_id}: '{old_name}' → '{new_name}'")
+    else:
+        print(f"⚠️ Device ID {device_id} not found.")
+
+session.commit()
+session.close()
+
+print(f"\n🎉 Done. {updated} device(s) updated.")
