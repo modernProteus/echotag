@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from backend.db.models import Device, FindEvent, db as postgres_db
+from sqlalchemy import text
 
 # Load URIs
 sqlite_uri = os.environ.get("SQLITE_DATABASE_URI", "sqlite:///backend/instance/echotag.db")
@@ -28,7 +29,7 @@ postgres_db.metadata.create_all(postgres_engine)
 try:
     # Migrate Devices
     print("🔄 Migrating Devices...")
-    sqlite_devices = sqlite_session.execute("SELECT * FROM devices").fetchall()
+    sqlite_devices = sqlite_session.execute(text("SELECT * FROM devices")).fetchall()
     for row in sqlite_devices:
         device = Device(
             id=row["id"],
@@ -43,7 +44,7 @@ try:
 
     # Migrate FindEvents
     print("🔄 Migrating Find Events...")
-    sqlite_events = sqlite_session.execute("SELECT * FROM find_events").fetchall()
+    sqlite_events = sqlite_session.execute(text("SELECT * FROM devices")).fetchall()
     for row in sqlite_events:
         event = FindEvent(
             id=row["id"],
