@@ -30,7 +30,7 @@ try:
     # Migrate Devices
     print("🔄 Migrating Devices...")
     sqlite_devices = sqlite_session.execute(text("SELECT * FROM devices")).fetchall()
-    for row in sqlite_devices:
+    for row in sqlite_result.mappings():
         device = Device(
             id=row["id"],
             name=row["name"],
@@ -45,7 +45,7 @@ try:
     # Migrate FindEvents
     print("🔄 Migrating Find Events...")
     sqlite_events = sqlite_session.execute(text("SELECT * FROM devices")).fetchall()
-    for row in sqlite_events:
+    for row in sqlite_result.mappings():
         event = FindEvent(
             id=row["id"],
             tool_id=row["tool_id"],
