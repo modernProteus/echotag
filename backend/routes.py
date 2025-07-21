@@ -192,7 +192,3 @@ def respond():
         return "Missing thread ID", 400
 
     return render_template("response.html", thread=thread_id)
-
-@app.route("/debug/db")
-def debug_db():
-    return f"Current DB URI: {app.config['SQLALCHEMY_DATABASE_URI']}"
